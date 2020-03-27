@@ -20,6 +20,7 @@ import org.raml.v2.internal.impl.commons.rule.RamlErrorNodeFactory;
 import org.raml.yagi.framework.grammar.rule.Rule;
 import org.raml.yagi.framework.nodes.FloatingNode;
 import org.raml.yagi.framework.nodes.Node;
+import org.raml.yagi.framework.nodes.NullNode;
 import org.raml.yagi.framework.nodes.SimpleTypeNode;
 import org.raml.yagi.framework.suggester.ParsingContext;
 import org.raml.yagi.framework.suggester.Suggestion;
@@ -33,10 +34,17 @@ import java.util.List;
 public class FormatValueRule extends Rule
 {
     private String format;
+    private final boolean nillable;
 
     public FormatValueRule(String format)
     {
+        this(format, false);
+    }
+
+    public FormatValueRule(String format, boolean nillable)
+    {
         this.format = format;
+        this.nillable = nillable;
     }
 
     @Override
@@ -59,8 +67,11 @@ public class FormatValueRule extends Rule
     {
         if (matches(node))
         {
-            return createNodeUsingFactory(node, ((SimpleTypeNode) node).getValue());
-        }
+            if ( node instanceof NullNode && nillable) {
+                return createNodeUsingFactory(node);
+            } else {
+                return createNodeUsingFactory(node, ((SimpleTypeNode) node).getValue());
+            }        }
         else
         {
             return RamlErrorNodeFactory.createInvalidFormatValue(

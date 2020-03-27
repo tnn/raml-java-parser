@@ -16,11 +16,7 @@
 package org.raml.yagi.framework.grammar.rule;
 
 import com.google.common.collect.Range;
-import org.raml.yagi.framework.nodes.FloatingNode;
-import org.raml.yagi.framework.nodes.IntegerNode;
-import org.raml.yagi.framework.nodes.Node;
-import org.raml.yagi.framework.nodes.NodeType;
-import org.raml.yagi.framework.nodes.StringNode;
+import org.raml.yagi.framework.nodes.*;
 import org.raml.yagi.framework.suggester.ParsingContext;
 import org.raml.yagi.framework.suggester.Suggestion;
 
@@ -32,6 +28,7 @@ import java.util.List;
 public class NumberTypeRule extends AbstractTypeRule
 {
     private final boolean castStringsAsNumbers;
+    private final boolean nillable;
     @Nullable
     private Range<Double> range;
 
@@ -39,6 +36,7 @@ public class NumberTypeRule extends AbstractTypeRule
     {
         this.range = range;
         this.castStringsAsNumbers = false;
+        this.nillable = false;
     }
 
     public NumberTypeRule()
@@ -46,10 +44,11 @@ public class NumberTypeRule extends AbstractTypeRule
         this(null);
     }
 
-    public NumberTypeRule(boolean castStringsAsNumbers)
-    {
+
+    public NumberTypeRule(boolean castStringsAsNumbers, boolean nillable) {
 
         this.castStringsAsNumbers = castStringsAsNumbers;
+        this.nillable = nillable;
     }
 
     @Nonnull
@@ -63,6 +62,11 @@ public class NumberTypeRule extends AbstractTypeRule
     @Override
     public boolean matches(@Nonnull Node node)
     {
+        if ( node instanceof NullNode && nillable) {
+
+            return true;
+        }
+
         if (node instanceof StringNode && castStringsAsNumbers)
         {
             String intString = ((StringNode) node).getValue();

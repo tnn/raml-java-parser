@@ -15,11 +15,7 @@
  */
 package org.raml.yagi.framework.grammar.rule;
 
-import org.raml.yagi.framework.nodes.FloatingNode;
-import org.raml.yagi.framework.nodes.IntegerNode;
-import org.raml.yagi.framework.nodes.Node;
-import org.raml.yagi.framework.nodes.SimpleTypeNode;
-import org.raml.yagi.framework.nodes.StringNode;
+import org.raml.yagi.framework.nodes.*;
 import org.raml.yagi.framework.suggester.ParsingContext;
 import org.raml.yagi.framework.suggester.Suggestion;
 
@@ -31,11 +27,18 @@ import java.util.List;
 public class MinimumValueRule extends Rule
 {
 
+    private final boolean nillable;
     private Number minimumValue;
 
     public MinimumValueRule(Number minimumValue)
     {
-        this.minimumValue = minimumValue;
+        this(minimumValue, false);
+    }
+
+    public MinimumValueRule(Number minimum, boolean nillable) {
+
+        this.minimumValue = minimum;
+        this.nillable = nillable;
     }
 
     @Nonnull
@@ -49,6 +52,9 @@ public class MinimumValueRule extends Rule
     public boolean matches(@Nonnull Node node)
     {
         BigDecimal value = null;
+        if ( node instanceof NullNode) {
+            value = new BigDecimal(0);
+        }
         if (node instanceof StringNode)
         {
             value = new BigDecimal(((StringNode) node).getValue());
@@ -61,7 +67,7 @@ public class MinimumValueRule extends Rule
         {
             value = ((FloatingNode) node).getValue();
         }
-        return value != null && value.compareTo(new BigDecimal(minimumValue.doubleValue())) >= 0;
+        return value != null && value.compareTo(BigDecimal.valueOf(minimumValue.doubleValue())) >= 0;
     }
 
     @Override
@@ -69,7 +75,11 @@ public class MinimumValueRule extends Rule
     {
         if (matches(node))
         {
-            return createNodeUsingFactory(node, ((SimpleTypeNode) node).getValue());
+            if ( node instanceof NullNode && nillable) {
+                return createNodeUsingFactory(node);
+            } else {
+                return createNodeUsingFactory(node, ((SimpleTypeNode) node).getValue());
+            }
         }
         else
         {

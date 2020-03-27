@@ -15,11 +15,7 @@
  */
 package org.raml.yagi.framework.grammar.rule;
 
-import org.raml.yagi.framework.nodes.FloatingNode;
-import org.raml.yagi.framework.nodes.IntegerNode;
-import org.raml.yagi.framework.nodes.Node;
-import org.raml.yagi.framework.nodes.SimpleTypeNode;
-import org.raml.yagi.framework.nodes.StringNode;
+import org.raml.yagi.framework.nodes.*;
 import org.raml.yagi.framework.suggester.ParsingContext;
 import org.raml.yagi.framework.suggester.Suggestion;
 
@@ -32,10 +28,16 @@ public class MaximumValueRule extends Rule
 {
 
     private Number maximumValue;
+    private final boolean nillable;
 
-    public MaximumValueRule(Number maximumValue)
+    public MaximumValueRule(Number maximumValue) {
+        this(maximumValue, false);
+    }
+
+    public MaximumValueRule(Number maximumValue, boolean nillable)
     {
         this.maximumValue = maximumValue;
+        this.nillable = nillable;
     }
 
     @Nonnull
@@ -49,6 +51,9 @@ public class MaximumValueRule extends Rule
     public boolean matches(@Nonnull Node node)
     {
         BigDecimal value = null;
+        if ( node instanceof NullNode) {
+            value = new BigDecimal(0);
+        }
         if (node instanceof StringNode)
         {
             value = new BigDecimal(((StringNode) node).getValue());
@@ -69,8 +74,11 @@ public class MaximumValueRule extends Rule
     {
         if (matches(node))
         {
-            return createNodeUsingFactory(node, ((SimpleTypeNode) node).getValue());
-        }
+            if ( node instanceof NullNode && nillable) {
+                return createNodeUsingFactory(node);
+            } else {
+                return createNodeUsingFactory(node, ((SimpleTypeNode) node).getValue());
+            }        }
         else
         {
             return ErrorNodeFactory.createInvalidMaximumValue(maximumValue);

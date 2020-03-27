@@ -30,6 +30,7 @@ public class IntegerTypeRule extends AbstractTypeRule
 {
 
     private final boolean castStringsAsNumbers;
+    private final boolean nillable;
     @Nullable
     private Range<Long> range;
 
@@ -37,6 +38,7 @@ public class IntegerTypeRule extends AbstractTypeRule
     {
         this.range = range;
         this.castStringsAsNumbers = false;
+        this.nillable = false;
     }
 
     public IntegerTypeRule()
@@ -44,10 +46,9 @@ public class IntegerTypeRule extends AbstractTypeRule
         this(null);
     }
 
-    public IntegerTypeRule(boolean castStringsAsNumbers)
-    {
-
+    public IntegerTypeRule(boolean castStringsAsNumbers, boolean nillable) {
         this.castStringsAsNumbers = castStringsAsNumbers;
+        this.nillable = nillable;
     }
 
     @Nonnull
@@ -61,6 +62,12 @@ public class IntegerTypeRule extends AbstractTypeRule
     @Override
     public boolean matches(@Nonnull Node node)
     {
+
+        if ( node instanceof NullNode && nillable) {
+
+            return true;
+        }
+
         if (node instanceof StringNode && castStringsAsNumbers)
         {
             String intString = ((StringNode) node).getValue();

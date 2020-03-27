@@ -26,62 +26,54 @@ import java.util.List;
 
 import static java.math.BigDecimal.ZERO;
 
-public class DivisorValueRule extends Rule
-{
+public class DivisorValueRule extends Rule {
 
     private final boolean castStringsAsNumbers;
+    private final boolean nillable;
     private Number divisorValue;
 
-    public DivisorValueRule(Number divisorValue)
-    {
-        this.divisorValue = divisorValue;
-        this.castStringsAsNumbers = false;
+    public DivisorValueRule(Number divisorValue) {
+        this(divisorValue, false, false);
     }
 
-    public DivisorValueRule(Number multiple, boolean castStringsAsNumbers)
-    {
+    public DivisorValueRule(Number divisorValue, boolean castStringsAsNumbers, boolean nillable) {
 
-        this.divisorValue = multiple;
+        this.divisorValue = divisorValue;
         this.castStringsAsNumbers = castStringsAsNumbers;
+        this.nillable = nillable;
     }
 
     @Nonnull
     @Override
-    public List<Suggestion> getSuggestions(Node node, ParsingContext context)
-    {
+    public List<Suggestion> getSuggestions(Node node, ParsingContext context) {
         return Collections.emptyList();
     }
 
     @Override
-    public boolean matches(@Nonnull Node node)
-    {
+    public boolean matches(@Nonnull Node node) {
         final BigDecimal divisor = new BigDecimal(divisorValue.toString());
         BigDecimal value = null;
-        if (node instanceof StringNode && castStringsAsNumbers)
-        {
+
+        if (node instanceof NullNode && nillable) {
+            value = new BigDecimal(0);
+        }
+
+        if (node instanceof StringNode && castStringsAsNumbers) {
             String intString = ((StringNode) node).getValue();
-            try
-            {
+            try {
                 value = new BigDecimal(intString);
-            }
-            catch (NumberFormatException e)
-            {
+            } catch (NumberFormatException e) {
                 return false;
             }
         }
-        if (node instanceof IntegerNode)
-        {
+        if (node instanceof IntegerNode) {
             value = new BigDecimal(((IntegerNode) node).getValue());
-        }
-        else if (node instanceof FloatingNode)
-        {
+        } else if (node instanceof FloatingNode) {
             value = ((FloatingNode) node).getValue();
         }
 
-        if (value != null)
-        {
-            if (divisor.compareTo(ZERO) == 0 && value.compareTo(ZERO) == 0)
-            {
+        if (value != null) {
+            if (divisor.compareTo(ZERO) == 0 && value.compareTo(ZERO) == 0) {
                 return true;
             }
             return !(divisor.compareTo(ZERO) == 0) && (value.remainder(divisor).compareTo(ZERO) == 0);
@@ -91,17 +83,16 @@ public class DivisorValueRule extends Rule
     }
 
     @Override
-    public Node apply(@Nonnull Node node)
-    {
-        if (matches(node))
-        {
-            return createNodeUsingFactory(node, ((SimpleTypeNode) node).getValue());
-        }
-        else
-        {
+    public Node apply(@Nonnull Node node) {
+        if (matches(node)) {
+            if (node instanceof NullNode && nillable) {
+                return createNodeUsingFactory(node);
+            } else {
+                return createNodeUsingFactory(node, ((SimpleTypeNode) node).getValue());
+            }
+        } else {
             if ((node instanceof IntegerNode && divisorValue.intValue() == 0) ||
-                node instanceof FloatingNode && divisorValue.floatValue() == 0f)
-            {
+                    node instanceof FloatingNode && divisorValue.floatValue() == 0f) {
                 return ErrorNodeFactory.createInvalidDivisorValue();
             }
             return ErrorNodeFactory.createInvalidMultipleOfValue(divisorValue);
@@ -109,8 +100,7 @@ public class DivisorValueRule extends Rule
     }
 
     @Override
-    public String getDescription()
-    {
+    public String getDescription() {
         return "Multiple of value";
     }
 }

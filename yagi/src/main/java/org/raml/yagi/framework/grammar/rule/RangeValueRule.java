@@ -16,11 +16,7 @@
 package org.raml.yagi.framework.grammar.rule;
 
 import org.apache.commons.lang.math.Range;
-import org.raml.yagi.framework.nodes.FloatingNode;
-import org.raml.yagi.framework.nodes.IntegerNode;
-import org.raml.yagi.framework.nodes.Node;
-import org.raml.yagi.framework.nodes.SimpleTypeNode;
-import org.raml.yagi.framework.nodes.StringNode;
+import org.raml.yagi.framework.nodes.*;
 import org.raml.yagi.framework.suggester.ParsingContext;
 import org.raml.yagi.framework.suggester.Suggestion;
 
@@ -33,10 +29,18 @@ public class RangeValueRule extends Rule
 {
 
     private Range range;
+    private final boolean nillable;
 
     public RangeValueRule(Range range)
     {
-        this.range = range;
+
+        this(range, false);
+    }
+
+    public RangeValueRule(Range numberRange, boolean nillable) {
+
+        range = numberRange;
+        this.nillable = nillable;
     }
 
     @Nonnull
@@ -49,6 +53,11 @@ public class RangeValueRule extends Rule
     @Override
     public boolean matches(@Nonnull Node node)
     {
+
+        if ( node instanceof NullNode && nillable) {
+
+            return true;
+        }
         if (node instanceof IntegerNode || node instanceof FloatingNode)
         {
             return true;
@@ -84,7 +93,11 @@ public class RangeValueRule extends Rule
     {
         if (validate(node))
         {
-            return createNodeUsingFactory(node, ((SimpleTypeNode) node).getValue());
+            if ( node instanceof NullNode && nillable) {
+                return createNodeUsingFactory(node);
+            } else {
+                return createNodeUsingFactory(node, ((SimpleTypeNode) node).getValue());
+            }
         }
         else
         {
@@ -94,6 +107,10 @@ public class RangeValueRule extends Rule
 
     private boolean validate(Node node)
     {
+        if ( node instanceof NullNode && nillable) {
+
+            return range.containsLong(0);
+        }
         if (node instanceof IntegerNode)
         {
             Long value = ((IntegerNode) node).getValue();
